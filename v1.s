@@ -12,7 +12,7 @@ v1:
 	mov r11, 0
 	vmovaps xmm0, xmmword ptr [rip + .needle]
 	vmovaps ymm0, ymmword ptr [rip + .needle]
-	jmp loop_nt_mix
+	jmp loop_tiled
 
 # ISPC version
 .align 64
@@ -92,14 +92,16 @@ loop_nt_x2: # 474ms
 loop_nt_x4: # 482ms
 	vmovntdqa ymm1, ymmword ptr [rdx]
 	vmovntdqa ymm2, ymmword ptr [rdx + 0x20]
-	vmovntdqa ymm3, ymmword ptr [rdx + 0x40]
-	vmovntdqa ymm4, ymmword ptr [rdx + 0x60]
 	vpcmpeqb        ymm5, ymm1, ymm0
 	vpcmpeqb        ymm6, ymm2, ymm0
+	vpor ymm6, ymm6, ymm5
+
+	vmovntdqa ymm3, ymmword ptr [rdx + 0x40]
+	vmovntdqa ymm4, ymmword ptr [rdx + 0x60]
 	vpcmpeqb        ymm7, ymm3, ymm0
 	vpcmpeqb        ymm8, ymm4, ymm0
 	vpor ymm8, ymm8, ymm7
-	vpor ymm6, ymm6, ymm5
+
 	vpor ymm8, ymm8, ymm6
 	vpmovmskb       ecx, ymm8
 	add     rdx, 0x80
@@ -122,9 +124,9 @@ loop_nt_x2_prefetch: # 467ms
 	je      loop_nt_x2_prefetch
 	jmp end
 
-# NT-T mix, with tiled access
+# tiled access
 .align 64
-loop_nt_mix: # 394ms
+loop_tiled: # 394ms
 	# temporal load
 	vmovaps ymm1, ymmword ptr [rdx]
 	vmovaps ymm2, ymmword ptr [rdx + 0x20]
@@ -134,8 +136,8 @@ loop_nt_mix: # 394ms
 	vpmovmskb       ecx, ymm6
 
 	# streaming load
-	vmovntdqa ymm3, ymmword ptr [rdx + 0x10000]
-	vmovntdqa ymm4, ymmword ptr [rdx + 0x10020]
+	vmovaps ymm3, ymmword ptr [rdx + 0x10000]
+	vmovaps ymm4, ymmword ptr [rdx + 0x10020]
 	vpcmpeqb        ymm7, ymm3, ymm0
 	vpcmpeqb        ymm8, ymm4, ymm0
 	vpor ymm8, ymm8, ymm7
@@ -154,7 +156,7 @@ loop_nt_mix: # 394ms
 _loop_nt_mix_epi:
 	or rcx, r11
 	test    ecx, ecx
-	je      loop_nt_mix
+	je      loop_tiled
 	jmp end
 
 end:
