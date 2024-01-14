@@ -12,7 +12,7 @@ v1:
 	mov r11, 0
 	vmovaps xmm0, xmmword ptr [rip + .needle]
 	vmovaps ymm0, ymmword ptr [rip + .needle]
-	jmp loop_tiled
+	jmp loop_ispc_pragma_x2
 
 # ISPC version
 .align 64
@@ -126,7 +126,7 @@ loop_nt_x2_prefetch: # 467ms
 
 # tiled access
 .align 64
-loop_tiled: # 394ms
+loop_tiled: # 392ms
 	# temporal load
 	vmovaps ymm1, ymmword ptr [rdx]
 	vmovaps ymm2, ymmword ptr [rdx + 0x20]
